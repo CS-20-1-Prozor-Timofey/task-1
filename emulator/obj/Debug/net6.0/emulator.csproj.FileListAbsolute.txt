@@ -1,0 +1,15 @@
+/Users/tim/Projects/emulator/emulator/bin/Debug/net6.0/emulator
+/Users/tim/Projects/emulator/emulator/bin/Debug/net6.0/emulator.deps.json
+/Users/tim/Projects/emulator/emulator/bin/Debug/net6.0/emulator.runtimeconfig.json
+/Users/tim/Projects/emulator/emulator/bin/Debug/net6.0/emulator.dll
+/Users/tim/Projects/emulator/emulator/bin/Debug/net6.0/emulator.pdb
+/Users/tim/Projects/emulator/emulator/obj/Debug/net6.0/emulator.csproj.AssemblyReference.cache
+/Users/tim/Projects/emulator/emulator/obj/Debug/net6.0/emulator.GeneratedMSBuildEditorConfig.editorconfig
+/Users/tim/Projects/emulator/emulator/obj/Debug/net6.0/emulator.AssemblyInfoInputs.cache
+/Users/tim/Projects/emulator/emulator/obj/Debug/net6.0/emulator.AssemblyInfo.cs
+/Users/tim/Projects/emulator/emulator/obj/Debug/net6.0/emulator.csproj.CoreCompileInputs.cache
+/Users/tim/Projects/emulator/emulator/obj/Debug/net6.0/emulator.dll
+/Users/tim/Projects/emulator/emulator/obj/Debug/net6.0/refint/emulator.dll
+/Users/tim/Projects/emulator/emulator/obj/Debug/net6.0/emulator.pdb
+/Users/tim/Projects/emulator/emulator/obj/Debug/net6.0/emulator.genruntimeconfig.cache
+/Users/tim/Projects/emulator/emulator/obj/Debug/net6.0/ref/emulator.dll
