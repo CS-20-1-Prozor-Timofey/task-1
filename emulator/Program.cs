@@ -1,193 +1,205 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.IO;
-using System.Threading;
-//Thread pool
-class Program
-{
-    private static readonly object lockObject = new object();
-    private static DebitCardState cardState = new DebitCardState();
-
-    static void Main(string[] args)
+﻿    using System;
+    using System.Collections.Generic;
+    using System.Globalization;
+    using System.IO;
+    using System.Threading;
+    //Thread pool
+    class Program
     {
-        string inputFolder = "/Users/tim/Projects/emulator/emulator/input";
-        string outputFolder = "/Users/tim/Projects/emulator/emulator/output";
-
-        var csvFiles = Directory.GetFiles(inputFolder, "*.csv")
-                                .OrderBy(file => file)
-                                .ToList();
-
-        DebitCardState cardState = new DebitCardState();
-
-        foreach (var csvFile in csvFiles)
+        private static readonly object lockObject = new object();
+        private static DebitCardState cardState = new DebitCardState();
+        static async Task Main(string[] args)
         {
-            ThreadPool.QueueUserWorkItem(state => ProcessFile(csvFile, cardState, outputFolder));
-        }
+            string inputFolder = "/Users/tim/Projects/emulator/emulator/input";
+            string outputFolder = "/Users/tim/Projects/emulator/emulator/output";
 
-        while (ThreadPool.PendingWorkItemCount > 0)
-        {
-            Thread.Sleep(100); 
-        }
+            var csvFiles = Directory.GetFiles(inputFolder, "*.csv")
+                                    .OrderBy(file => file)
+                                    .ToList();
+
+            DebitCardState cardState = new DebitCardState();
+
+            foreach (var csvFile in csvFiles)
+            {
+                ThreadPool.QueueUserWorkItem(state => ProcessFile(csvFile, cardState, outputFolder));
+            }
+
+            while (ThreadPool.PendingWorkItemCount > 0)
+             {
+            await Task.Delay(100);
+             }
 
         ResultSummary resultSummary = new ResultSummary
-        {
-            FinalBalance = cardState.Balance,
-            SuccessfulTransactions = cardState.SuccessfulTransactions,
-            UnsuccessfulTransactions = cardState.UnsuccessfulTransactions,
-            TotalFilesProcessed = csvFiles.Count
-        };
-
-        File.WriteAllText(Path.Combine(outputFolder, "result.json"), resultSummary.ToJson());
-    }
-
-    static void ProcessFile(string file, DebitCardState cardState, string outputFolder)
-    {
-        string filePath = file;
-        try
-        {
-            lock (lockObject)
             {
-                var lines = File.ReadAllLines(filePath);
+                FinalBalance = cardState.Balance,
+                SuccessfulTransactions = cardState.SuccessfulTransactions,
+                UnsuccessfulTransactions = cardState.UnsuccessfulTransactions,
+                TotalFilesProcessed = csvFiles.Count
+            };
 
-                foreach (var line in lines)
-                {
-                    var parts = line.Split(',');
+            File.WriteAllText(Path.Combine(outputFolder, "result.json"), resultSummary.ToJson());
+        }
 
-                    if (parts.Length == 3)
+        static void ProcessFile(string file, DebitCardState cardState, string outputFolder)
+        {
+            string filePath = file;
+            try
+            {
+               
+                    var lines = File.ReadAllLines(filePath);
+
+                    foreach (var line in lines)
                     {
-                        var dateStr = parts[0];
-                        var typeStr = parts[1];
-                        var amountStr = parts[2];
+                        var parts = line.Split(',');
 
-                        if (DateTime.TryParse(dateStr, out DateTime date) &&
-                            Enum.TryParse<TransactionType>(typeStr, true, out TransactionType transactionType) &&
-                            decimal.TryParse(amountStr, NumberStyles.Currency, CultureInfo.InvariantCulture, out decimal amount))
+                        if (parts.Length == 3)
                         {
-                            var transaction = new Transaction
-                            {
-                                Date = date,
-                                Type = transactionType,
-                                Amount = amount
-                            };
+                            var dateStr = parts[0];
+                            var typeStr = parts[1];
+                            var amountStr = parts[2];
 
-                            ProcessTransaction(transaction, cardState, outputFolder);
+                            if (DateTime.TryParse(dateStr, out DateTime date) &&
+                                Enum.TryParse<TransactionType>(typeStr, true, out TransactionType transactionType) &&
+                                decimal.TryParse(amountStr, NumberStyles.Currency, CultureInfo.InvariantCulture, out decimal amount))
+                            {
+                                var transaction = new Transaction
+                                {
+                                    Date = date,
+                                    Type = transactionType,
+                                    Amount = amount
+                                };
+
+                                ProcessTransaction(transaction, cardState, outputFolder);
+                            }
+                            else
+                            {
+                                LogError(filePath, "Invalid format in CSV line: " + line);
+                            }
                         }
                         else
                         {
-                            LogError(filePath, "Invalid format in CSV line: " + line);
+                            LogError(filePath, "Invalid CSV line: " + line);
                         }
-                    }
-                    else
-                    {
-                        LogError(filePath, "Invalid CSV line: " + line);
-                    }
+                    
                 }
             }
-        }
-        catch (Exception ex)
-        {
-            LogError(filePath, "Error reading CSV file: " + ex.Message);
-        }
-    }
-
-
-
-
-
-
-static void ProcessTransaction(Transaction transaction, DebitCardState cardState, string outputFolder)
-    {
-        lock (lockObject)
-        {
-            if (transaction.Type == TransactionType.Deposit)
+            catch (Exception ex)
             {
-                cardState.UpdateBalance(transaction.Amount);
-                cardState.AddSuccessfulTransaction(transaction);
-                LogTransaction(outputFolder, transaction, "Success");
+                LogError(filePath, "Error reading CSV file: " + ex.Message);
             }
-            else if (transaction.Type == TransactionType.Withdrawal)
-            {
-                if (cardState.CanWithdraw(transaction.Amount))
+        }
+
+
+
+
+
+
+    static void ProcessTransaction(Transaction transaction, DebitCardState cardState, string outputFolder)
+        {
+            
+                if (transaction.Type == TransactionType.Deposit)
                 {
-                    cardState.UpdateBalance(-transaction.Amount);
+                    cardState.UpdateBalance(transaction.Amount);
                     cardState.AddSuccessfulTransaction(transaction);
                     LogTransaction(outputFolder, transaction, "Success");
                 }
-                else
+                else if (transaction.Type == TransactionType.Withdrawal)
                 {
-                    cardState.AddUnsuccessfulTransaction(transaction);
-                    LogTransaction(outputFolder, transaction, "Failed (Insufficient funds)");
+                    if (cardState.CanWithdraw(transaction.Amount))
+                    {
+                        cardState.UpdateBalance(-transaction.Amount);
+                        cardState.AddSuccessfulTransaction(transaction);
+                        LogTransaction(outputFolder, transaction, "Success");
+                    }
+                    else
+                    {
+                        cardState.AddUnsuccessfulTransaction(transaction);
+                        LogTransaction(outputFolder, transaction, "Failed (Insufficient funds)");
+                    }
                 }
-            }
+            
+        }
+
+        static void LogTransaction(string outputFolder, Transaction transaction, string status)
+        {
+            string logPath = Path.Combine(outputFolder, "transaction_log.csv");
+            string logEntry = $"{transaction.Date},{transaction.Type},{transaction.Amount},{status}\n";
+        lock (lockObject)
+        {
+            File.AppendAllText(logPath, logEntry);
+        }
+        }
+
+        static void LogError(string filePath, string error)
+        {
+            Console.WriteLine($"Error in file {filePath}: {error}");
         }
     }
 
-    static void LogTransaction(string outputFolder, Transaction transaction, string status)
+    enum TransactionType
     {
-        string logPath = Path.Combine(outputFolder, "transaction_log.csv");
-        string logEntry = $"{transaction.Date},{transaction.Type},{transaction.Amount},{status}\n";
-        File.AppendAllText(logPath, logEntry);
+        Deposit,
+        Withdrawal
     }
 
-    static void LogError(string filePath, string error)
+    class Transaction
     {
-        Console.WriteLine($"Error in file {filePath}: {error}");
+        public DateTime Date { get; set; }
+        public TransactionType Type { get; set; }
+        public decimal Amount { get; set; }
     }
-}
 
-enum TransactionType
-{
-    Deposit,
-    Withdrawal
-}
-
-class Transaction
-{
-    public DateTime Date { get; set; }
-    public TransactionType Type { get; set; }
-    public decimal Amount { get; set; }
-}
-
-class DebitCardState
-{
-    public decimal Balance { get; private set; }
-    public int SuccessfulTransactions { get; private set; }
-    public int UnsuccessfulTransactions { get; private set; }
+    class DebitCardState
+    {
+        public decimal Balance { get; private set; }
+        public int SuccessfulTransactions { get; private set; }
+        public int UnsuccessfulTransactions { get; private set; }
+         private  readonly object lockObject = new object();
+    private  readonly object lockObject2 = new object();
+    private  readonly object lockObject3 = new object();
 
     public void UpdateBalance(decimal amount)
-    {
-        Balance += amount;
+        {
+        lock (lockObject)
+        {
+            Balance += amount;
+        }
+        }
+
+        public void AddSuccessfulTransaction(Transaction transaction)
+        {
+        lock (lockObject2)
+        {
+            SuccessfulTransactions++;
+        }
+        }
+
+        public void AddUnsuccessfulTransaction(Transaction transaction)
+        {
+        lock (lockObject3)
+        {
+            UnsuccessfulTransactions++;
+        }
+        }
+
+        public bool CanWithdraw(decimal amount)
+        {
+            return Balance >= amount;
+        }
     }
 
-    public void AddSuccessfulTransaction(Transaction transaction)
+    class ResultSummary
     {
-        SuccessfulTransactions++;
-    }
+        public decimal FinalBalance { get; set; }
+        public int SuccessfulTransactions { get; set; }
+        public int UnsuccessfulTransactions { get; set; }
+        public int TotalFilesProcessed { get; set; }
 
-    public void AddUnsuccessfulTransaction(Transaction transaction)
-    {
-        UnsuccessfulTransactions++;
+        public string ToJson()
+        {
+            return $"{nameof(FinalBalance)}: {FinalBalance}, {nameof(SuccessfulTransactions)}: {SuccessfulTransactions}, {nameof(UnsuccessfulTransactions)}: {UnsuccessfulTransactions}, {nameof(TotalFilesProcessed)}: {TotalFilesProcessed}";
+        }
     }
-
-    public bool CanWithdraw(decimal amount)
-    {
-        return Balance >= amount;
-    }
-}
-
-class ResultSummary
-{
-    public decimal FinalBalance { get; set; }
-    public int SuccessfulTransactions { get; set; }
-    public int UnsuccessfulTransactions { get; set; }
-    public int TotalFilesProcessed { get; set; }
-
-    public string ToJson()
-    {
-        return $"{nameof(FinalBalance)}: {FinalBalance}, {nameof(SuccessfulTransactions)}: {SuccessfulTransactions}, {nameof(UnsuccessfulTransactions)}: {UnsuccessfulTransactions}, {nameof(TotalFilesProcessed)}: {TotalFilesProcessed}";
-    }
-}
 
 
 

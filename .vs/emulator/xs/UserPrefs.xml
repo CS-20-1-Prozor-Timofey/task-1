@@ -1,4 +1,30 @@
 ﻿<Properties StartupConfiguration="{F68B6491-1490-4DC0-A31B-15AEC23393D3}|Default">
-  <MonoDevelop.Ide.ItemProperties.emulator FirstBuild="True" />
+  <MonoDevelop.Ide.Workbench ActiveDocument="emulator/Program.cs">
+    <Files>
+      <File FileName="emulator/Program.cs" Line="11" Column="26" />
+      <File FileName="emulator/output/result.json" Line="1" Column="1" />
+      <File FileName="emulator/output/transaction_log.csv" Line="1" Column="1" />
+      <File FileName="emulator/input/inputLog.csv" Line="1" Column="1" />
+    </Files>
+    <Pads>
+      <Pad Id="ProjectPad">
+        <State name="__root__">
+          <Node name="emulator">
+            <Node name="emulator">
+              <Node name="input" expanded="True" />
+              <Node name="output" expanded="True" />
+              <Node name="Program.cs" selected="True" />
+            </Node>
+          </Node>
+        </State>
+      </Pad>
+    </Pads>
+  </MonoDevelop.Ide.Workbench>
   <MultiItemStartupConfigurations />
+  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
+  <MonoDevelop.Ide.DebuggingService.PinnedWatches />
+  <MonoDevelop.Ide.DebuggingService.Breakpoints>
+    <BreakpointStore />
+  </MonoDevelop.Ide.DebuggingService.Breakpoints>
+  <MonoDevelop.Ide.ItemProperties.emulator PreferredExecutionTarget="MonoDevelop.Default" />
 </Properties>
